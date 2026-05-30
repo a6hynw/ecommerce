@@ -1,0 +1,111 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Shop Catalog | AetherStore{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">Experience the <span class="text-gradient">Aether</span> Aesthetic</h1>
+        <p class="hero-subtitle">Meticulously designed products styled for the modern workspace.</p>
+        
+        <!-- Search Bar -->
+        <form method="GET" action="{% url 'home' %}" class="hero-search-form">
+            <div class="search-input-wrapper">
+                <ion-icon name="search-outline"></ion-icon>
+                <input type="text" name="search" placeholder="Search premium products..." value="{{ search_query }}">
+                {% if category_slug %}
+                    <input type="hidden" name="category" value="{{ category_slug }}">
+                {% endif %}
+                {% if sort_by %}
+                    <input type="hidden" name="sort" value="{{ sort_by }}">
+                {% endif %}
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Shop Catalog Container -->
+<section class="catalog-section">
+    <div class="catalog-controls">
+        <!-- Categories Filter -->
+        <div class="category-filters">
+            <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if sort_by %}sort={{ sort_by }}&{% endif %}" 
+               class="filter-chip {% if not category_slug %}active{% endif %}">
+                All Products
+            </a>
+            {% for cat in categories %}
+            <a href="?category={{ cat.slug }}{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" 
+               class="filter-chip {% if category_slug == cat.slug %}active{% endif %}">
+                {{ cat.name }} <span class="chip-count">({{ cat.product_count }})</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Sort Select -->
+        <div class="sort-selector">
+            <label for="sortSelect"><ion-icon name="funnel-outline"></ion-icon> Sort By</label>
+            <select id="sortSelect" onchange="location = this.value;">
+                <option value="?{% if category_slug %}category={{ category_slug }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}" {% if not sort_by %}selected{% endif %}>Featured</option>
+                <option value="?sort=price_asc{% if category_slug %}&category={{ category_slug }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                <option value="?sort=price_desc{% if category_slug %}&category={{ category_slug }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                <option value="?sort=newest{% if category_slug %}&category={{ category_slug }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" {% if sort_by == 'newest' %}selected{% endif %}>Newest Arrivals</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="products-grid">
+        {% for prod in products %}
+        <div class="product-card">
+            <!-- Image / Visual -->
+            <div class="product-image-container">
+                {% if prod.image_url %}
+                    <img src="{{ prod.image_url }}" alt="{{ prod.name }}" class="product-image">
+                {% else %}
+                    <div class="product-placeholder">
+                        <ion-icon name="cube-outline"></ion-icon>
+                    </div>
+                {% endif %}
+                
+                {% if prod.stock == 0 %}
+                    <div class="product-badge badge-out-of-stock">Out of Stock</div>
+                {% elif prod.is_low_stock %}
+                    <div class="product-badge badge-low-stock">Only {{ prod.stock }} Left</div>
+                {% endif %}
+            </div>
+
+            <!-- Product Details -->
+            <div class="product-card-body">
+                <span class="product-card-category">{{ prod.category.name }}</span>
+                <h3 class="product-card-title">
+                    <a href="{% url 'product_detail' prod.slug %}">{{ prod.name }}</a>
+                </h3>
+                <p class="product-card-desc">{{ prod.description|truncatewords:12 }}</p>
+                
+                <div class="product-card-footer">
+                    <span class="product-card-price">${{ prod.price }}</span>
+                    {% if prod.stock > 0 %}
+                        <button class="btn-icon-add" data-product-id="{{ prod.id }}" onclick="quickAddToCart(this, parseInt(this.dataset.productId))" title="Add to Cart">
+                            <ion-icon name="cart-outline"></ion-icon>
+                        </button>
+                    {% else %}
+                        <button class="btn-icon-add disabled" disabled title="Out of Stock">
+                            <ion-icon name="close-circle-outline"></ion-icon>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <ion-icon name="search-outline"></ion-icon>
+            <h3>No products found</h3>
+            <p>Try clearing filters or search query to explore other items.</p>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Reset Search</a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

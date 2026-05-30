@@ -1,0 +1,117 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}My Cart | AetherStore{% endblock %}
+
+{% block content %}
+<div class="cart-container">
+    <h1 class="page-title">Shopping Cart</h1>
+    
+    <div id="cartContent" class="{% if not cart_items.exists %}hidden{% endif %}">
+        <div class="cart-layout">
+            <!-- Items Table/List -->
+            <div class="cart-items-panel">
+                {% for item in cart_items %}
+                <div class="cart-item-row" id="cartItemRow-{{ item.id }}">
+                    <div class="cart-item-visual">
+                        {% if item.product.image_url %}
+                            <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}">
+                        {% else %}
+                            <div class="cart-placeholder"><ion-icon name="cube-outline"></ion-icon></div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="cart-item-details">
+                        <span class="cart-item-category">{{ item.product.category.name }}</span>
+                        <h3 class="cart-item-title">
+                            <a href="{% url 'product_detail' item.product.slug %}">{{ item.product.name }}</a>
+                        </h3>
+                        <span class="cart-item-price">${{ item.product.price }}</span>
+                    </div>
+
+                    <div class="cart-item-actions">
+                        <div class="quantity-selector">
+                            <button type="button"
+                                data-item-id="{{ item.id }}"
+                                data-change="-1"
+                                data-max-stock="{{ item.product.stock }}"
+                                onclick="updateCartItemQty(this.dataset.itemId, parseInt(this.dataset.change), parseInt(this.dataset.maxStock))">
+                                <ion-icon name="remove-outline"></ion-icon>
+                            </button>
+                            <input type="text" id="cartItemQty-{{ item.id }}" value="{{ item.quantity }}" readonly>
+                            <button type="button"
+                                data-item-id="{{ item.id }}"
+                                data-change="1"
+                                data-max-stock="{{ item.product.stock }}"
+                                onclick="updateCartItemQty(this.dataset.itemId, parseInt(this.dataset.change), parseInt(this.dataset.maxStock))">
+                                <ion-icon name="add-outline"></ion-icon>
+                            </button>
+                        </div>
+                        
+                        <button class="btn-remove"
+                            data-item-id="{{ item.id }}"
+                            onclick="removeCartItem(this.dataset.itemId)"
+                            title="Remove Item">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </div>
+
+                    <div class="cart-item-subtotal">
+                        <span class="subtotal-label">Subtotal</span>
+                        <span class="subtotal-val" id="cartItemSubtotal-{{ item.id }}">${{ item.subtotal }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Summary Card -->
+            <div class="cart-summary-panel">
+                <div class="summary-card">
+                    <h3 class="summary-title">Order Summary</h3>
+                    
+                    <div class="summary-row">
+                        <span>Items Subtotal</span>
+                        <span id="summarySubtotal">${{ total }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping</span>
+                        <span class="text-free">FREE</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Estimated Tax (10%)</span>
+                        <span id="summaryTax">$0.00</span>
+                    </div>
+                    
+                    <div class="summary-divider"></div>
+                    
+                    <div class="summary-row summary-total">
+                        <span>Estimated Total</span>
+                        <span id="summaryTotal">${{ total }}</span>
+                    </div>
+
+                    <a href="{% url 'checkout' %}" class="btn btn-primary btn-block btn-checkout">
+                        Proceed to Checkout <ion-icon name="arrow-forward-outline"></ion-icon>
+                    </a>
+                    
+                    <div class="summary-back">
+                        <a href="{% url 'home' %}"><ion-icon name="bag-handle-outline"></ion-icon> Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="cartEmptyState" class="empty-state {% if cart_items.exists %}hidden{% endif %}">
+        <ion-icon name="cart-outline" class="empty-cart-icon"></ion-icon>
+        <h3>Your cart is empty</h3>
+        <p>Looks like you haven't added any products to your cart yet.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">Start Shopping</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        recalculateCartSummary();
+    });
+</script>
+{% endblock %}

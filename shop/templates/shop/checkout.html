@@ -1,0 +1,113 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Checkout | AetherStore{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+    <h1 class="page-title">Secure Checkout</h1>
+    
+    <div class="checkout-layout">
+        <!-- Form Section -->
+        <div class="checkout-form-panel">
+            <form method="POST" action="{% url 'checkout' %}" class="glass-form" id="checkoutForm" novalidate>
+                {% csrf_token %}
+                
+                <!-- Contact Info Section -->
+                <div class="form-section">
+                    <h3 class="section-heading"><ion-icon name="person-outline"></ion-icon> Contact Information</h3>
+                    <div class="form-grid">
+                        <div class="form-group col-6">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" name="full_name" placeholder="John Doe" value="{{ user.username }}" required>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" placeholder="john@example.com" value="{{ user.email }}" required>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="phone">Phone Number</label>
+                            <input type="text" id="phone" name="phone" placeholder="+1 (555) 123-4567" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipping Address Section -->
+                <div class="form-section">
+                    <h3 class="section-heading"><ion-icon name="location-outline"></ion-icon> Shipping Details</h3>
+                    <div class="form-group">
+                        <label for="address">Street Address</label>
+                        <input type="text" id="address" name="shipping_address" placeholder="123 Cyberpunk Ave, Apt 4B" required>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group col-6">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" placeholder="Neo-Tokyo" required>
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="zipCode">Zip/Postal Code</label>
+                            <input type="text" id="zipCode" name="zip_code" placeholder="10001" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulated Billing Section -->
+                <div class="form-section">
+                    <h3 class="section-heading"><ion-icon name="card-outline"></ion-icon> Payment Method (Simulated)</h3>
+                    <p class="section-notice">This is a sandbox checkout. Do NOT enter real credit card numbers.</p>
+                    <div class="form-group">
+                        <label for="cardNumber">Card Holder Number</label>
+                        <input type="text" id="cardNumber" placeholder="4111 2222 3333 4444">
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group col-6">
+                            <label for="cardExpiry">Expiration Date</label>
+                            <input type="text" id="cardExpiry" placeholder="MM/YY">
+                        </div>
+                        <div class="form-group col-6">
+                            <label for="cardCvv">CVV Code</label>
+                            <input type="password" id="cardCvv" placeholder="123" maxlength="3">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block btn-place-order">
+                    <ion-icon name="lock-closed-outline"></ion-icon> Complete Order & Pay
+                </button>
+            </form>
+        </div>
+
+        <!-- Checkout Sidebar Review -->
+        <div class="checkout-review-panel">
+            <div class="review-card">
+                <h3 class="review-title">Review Items</h3>
+                <div class="review-items-list">
+                    {% for item in cart_items %}
+                    <div class="review-item">
+                        <div class="review-item-info">
+                            <span class="review-item-name">{{ item.product.name }}</span>
+                            <span class="review-item-qty">Qty: {{ item.quantity }}</span>
+                        </div>
+                        <span class="review-item-price">${{ item.subtotal }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>${{ total }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping</span>
+                    <span class="text-free">FREE</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Order Total</span>
+                    <span>${{ total }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

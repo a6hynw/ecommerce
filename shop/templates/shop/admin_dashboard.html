@@ -1,0 +1,332 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Admin Portal | AetherStore{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header-block">
+        <h1 class="page-title">Admin Management Portal</h1>
+        <button class="btn btn-primary" onclick="openAddProductModal()">
+            <ion-icon name="add-outline"></ion-icon> Add New Product
+        </button>
+    </div>
+
+    <!-- Metric Stats Grid -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon metric-info">
+                <ion-icon name="cube-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Total Products</h3>
+                <p class="metric-value">{{ total_products }}</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-warning">
+                <ion-icon name="time-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Pending Orders</h3>
+                <p class="metric-value">{{ pending_orders }}</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-danger">
+                <ion-icon name="warning-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Low Stock Alerts</h3>
+                <p class="metric-value">{{ low_stock_products }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Toggle Controls -->
+    <div class="admin-tabs">
+        <button class="tab-btn active" id="tabBtnProducts" onclick="switchAdminTab('products')">
+            <ion-icon name="cube-outline"></ion-icon> Products ({{ products.count }})
+        </button>
+        <button class="tab-btn" id="tabBtnOrders" onclick="switchAdminTab('orders')">
+            <ion-icon name="receipt-outline"></ion-icon> Orders ({{ orders.count }})
+        </button>
+    </div>
+
+    <!-- Products Tab Content -->
+    <div class="tab-content" id="tabContentProducts">
+        <div class="table-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prod in products %}
+                    <tr>
+                        <td>
+                            <div class="table-prod-info">
+                                <div class="table-prod-img">
+                                    {% if prod.image_url %}
+                                        <img src="{{ prod.image_url }}" alt="{{ prod.name }}">
+                                    {% else %}
+                                        <div class="table-placeholder"><ion-icon name="cube-outline"></ion-icon></div>
+                                    {% endif %}
+                                </div>
+                                <div class="table-prod-meta">
+                                    <span class="table-prod-name">{{ prod.name }}</span>
+                                    <span class="table-prod-slug">{{ prod.slug }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ prod.category.name }}</td>
+                        <td>${{ prod.price }}</td>
+                        <td>
+                            {% if prod.stock == 0 %}
+                                <span class="table-badge status-cancelled">Out of Stock</span>
+                            {% elif prod.is_low_stock %}
+                                <span class="table-badge status-pending">Low Stock ({{ prod.stock }})</span>
+                            {% else %}
+                                <span class="table-badge status-delivered">In Stock ({{ prod.stock }})</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="btn-table-edit"
+                                    data-id="{{ prod.id }}"
+                                    data-name="{{ prod.name|escapejs }}"
+                                    data-category="{{ prod.category.id }}"
+                                    data-description="{{ prod.description|escapejs }}"
+                                    data-price="{{ prod.price }}"
+                                    data-stock="{{ prod.stock }}"
+                                    data-image="{{ prod.image_url|escapejs }}"
+                                    onclick="openEditProductModal(this)">
+                                    <ion-icon name="create-outline"></ion-icon> Edit
+                                </button>
+                                <form method="POST" action="{% url 'admin_delete_product' prod.id %}" style="display:inline;"
+                                    onsubmit="return confirm('Permanently delete this product?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-table-delete">
+                                        <ion-icon name="trash-outline"></ion-icon> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="table-empty">No products exist yet. Click Add Product to get started.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Orders Tab Content -->
+    <div class="tab-content hidden" id="tabContentOrders">
+        <div class="table-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>User</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Current Status</th>
+                        <th>Change Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>{{ order.user.username }}</td>
+                        <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                        <td>${{ order.total_price }}</td>
+                        <td>
+                            <span class="status-badge status-{{ order.status|lower }}">{{ order.status }}</span>
+                        </td>
+                        <td>
+                            <form method="POST" action="{% url 'admin_update_order_status' order.id %}" class="status-update-form">
+                                {% csrf_token %}
+                                <select name="status" onchange="this.form.submit()">
+                                    <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                    <option value="Processing" {% if order.status == 'Processing' %}selected{% endif %}>Processing</option>
+                                    <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                                    <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                    <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="table-empty">No orders placed yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Product -->
+<div class="modal-overlay hidden" id="addProductModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Add New Product</h3>
+            <button class="modal-close" onclick="closeAddProductModal()"><ion-icon name="close-outline"></ion-icon></button>
+        </div>
+        <form method="POST" action="{% url 'admin_add_product' %}" class="modal-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="addName">Product Name</label>
+                <input type="text" id="addName" name="name" required placeholder="e.g. Cyber Keyboard Lite">
+            </div>
+            
+            <div class="form-group">
+                <label for="addCategory">Category</label>
+                <select id="addCategory" name="category" required>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group col-6">
+                    <label for="addPrice">Price ($)</label>
+                    <input type="number" id="addPrice" name="price" step="0.01" min="0" required placeholder="99.99">
+                </div>
+                <div class="form-group col-6">
+                    <label for="addStock">Stock Quantity</label>
+                    <input type="number" id="addStock" name="stock" min="0" required placeholder="20">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="addImageUrl">Product Image URL</label>
+                <input type="url" id="addImageUrl" name="image_url" placeholder="https://images.unsplash.com/...">
+            </div>
+
+            <div class="form-group">
+                <label for="addDescription">Description</label>
+                <textarea id="addDescription" name="description" rows="3" required placeholder="Product specifications..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Create Product</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Product -->
+<div class="modal-overlay hidden" id="editProductModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Edit Product Details</h3>
+            <button class="modal-close" onclick="closeEditProductModal()"><ion-icon name="close-outline"></ion-icon></button>
+        </div>
+        <form method="POST" id="editProductForm" class="modal-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="editName">Product Name</label>
+                <input type="text" id="editName" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="editCategory">Category</label>
+                <select id="editCategory" name="category" required>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-group col-6">
+                    <label for="editPrice">Price ($)</label>
+                    <input type="number" id="editPrice" name="price" step="0.01" min="0" required>
+                </div>
+                <div class="form-group col-6">
+                    <label for="editStock">Stock Quantity</label>
+                    <input type="number" id="editStock" name="stock" min="0" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="editImageUrl">Product Image URL</label>
+                <input type="url" id="editImageUrl" name="image_url">
+            </div>
+
+            <div class="form-group">
+                <label for="editDescription">Description</label>
+                <textarea id="editDescription" name="description" rows="3" required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchAdminTab(tabName) {
+        const btnProducts = document.getElementById('tabBtnProducts');
+        const btnOrders = document.getElementById('tabBtnOrders');
+        const contentProducts = document.getElementById('tabContentProducts');
+        const contentOrders = document.getElementById('tabContentOrders');
+        
+        if (tabName === 'products') {
+            btnProducts.classList.add('active');
+            btnOrders.classList.remove('active');
+            contentProducts.classList.remove('hidden');
+            contentOrders.classList.add('hidden');
+        } else {
+            btnProducts.classList.remove('active');
+            btnOrders.classList.add('active');
+            contentProducts.classList.add('hidden');
+            contentOrders.classList.remove('hidden');
+        }
+    }
+
+    // Modal Add functions
+    function openAddProductModal() {
+        document.getElementById('addProductModal').classList.remove('hidden');
+    }
+    
+    function closeAddProductModal() {
+        document.getElementById('addProductModal').classList.add('hidden');
+    }
+
+    // Modal Edit functions — reads values from data-* attributes (avoids inline JS linter errors)
+    function openEditProductModal(btn) {
+        const id          = btn.dataset.id;
+        const name        = btn.dataset.name;
+        const categoryId  = btn.dataset.category;
+        const description = btn.dataset.description;
+        const price       = btn.dataset.price;
+        const stock       = btn.dataset.stock;
+        const imageUrl    = btn.dataset.image;
+
+        document.getElementById('editName').value        = name;
+        document.getElementById('editCategory').value    = categoryId;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('editPrice').value       = price;
+        document.getElementById('editStock').value       = stock;
+        document.getElementById('editImageUrl').value    = imageUrl;
+
+        // Update form action to the correct product URL
+        document.getElementById('editProductForm').setAttribute('action', `/admin/edit-product/${id}/`);
+
+        document.getElementById('editProductModal').classList.remove('hidden');
+    }
+
+    function closeEditProductModal() {
+        document.getElementById('editProductModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

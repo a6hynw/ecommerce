@@ -1,0 +1,365 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Super Admin Executive Control | AetherStore{% endblock %}
+
+{% block content %}
+<div class="super-container">
+    <div class="super-header-block">
+        <h1 class="page-title">Executive Super Admin Panel</h1>
+        <p class="dashboard-subtitle">Global oversight, user credentials management, categories config, and system analytics.</p>
+    </div>
+
+    <!-- Metrics Stats Grid -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon metric-purple">
+                <ion-icon name="analytics-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Global Revenue</h3>
+                <p class="metric-value">${{ total_revenue }}</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-warning">
+                <ion-icon name="people-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Active Users</h3>
+                <p class="metric-value">{{ active_users }}</p>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-info">
+                <ion-icon name="list-outline"></ion-icon>
+            </div>
+            <div class="metric-info">
+                <h3>Total Categories</h3>
+                <p class="metric-value">{{ total_categories }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Trend Visualizer -->
+    <div class="analytics-card">
+        <div class="analytics-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h3 id="chartTitle" style="margin: 0;">Today's Hourly Sales</h3>
+            <div class="chart-filters" style="display: flex; gap: 8px; background: var(--bg-main); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <button class="btn-time-filter active" onclick="updateChart('daily', 'Today\'s Hourly Sales', this)">Today</button>
+                <button class="btn-time-filter" onclick="updateChart('monthly', 'This Month\'s Daily Sales', this)">This Month</button>
+                <button class="btn-time-filter" onclick="updateChart('yearly', 'This Year\'s Monthly Sales', this)">This Year</button>
+            </div>
+        </div>
+        <div class="chart-container-wrapper" style="position: relative; height:300px; width:100%">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tabs Toggle Controls -->
+    <div class="admin-tabs">
+        <button class="tab-btn active" id="tabBtnUsers" onclick="switchSuperTab('users')">
+            <ion-icon name="people-outline"></ion-icon> User Directory
+        </button>
+        <button class="tab-btn" id="tabBtnCategories" onclick="switchSuperTab('categories')">
+            <ion-icon name="list-outline"></ion-icon> Categories Settings
+        </button>
+    </div>
+
+    <!-- User Management Content -->
+    <div class="tab-content" id="tabContentUsers">
+        <div class="table-card">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Admin Role</th>
+                        <th>Action Controls</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td><strong>{{ u.username }}</strong> {% if u == user %}<span class="table-badge status-delivered">You</span>{% endif %}</td>
+                        <td>{{ u.email|default:"No Email" }}</td>
+                        <td>
+                            {% if u.is_active %}
+                                <span class="table-badge status-delivered">Active</span>
+                            {% else %}
+                                <span class="table-badge status-cancelled">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_superuser %}
+                                <span class="table-badge status-delivered">Super Admin</span>
+                            {% elif u.is_staff %}
+                                <span class="table-badge status-pending">Admin</span>
+                            {% else %}
+                                <span class="table-badge status-processing">Customer</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u != user %}
+                            <form method="POST" action="{% url 'super_manage_user_role' u.id %}" class="inline-control-form">
+                                {% csrf_token %}
+                                {% if not u.is_superuser %}
+                                    {% if not u.is_staff %}
+                                        <button type="submit" name="role_action" value="make_admin" class="btn-sub btn-action-success">Promote Admin</button>
+                                    {% else %}
+                                        <button type="submit" name="role_action" value="remove_admin" class="btn-sub btn-action-danger">Revoke Admin</button>
+                                    {% endif %}
+                                    <button type="submit" name="role_action" value="make_superadmin" class="btn-sub btn-action-purple">Make Super</button>
+                                {% endif %}
+                                
+                                {% if u.is_active %}
+                                    <button type="submit" name="role_action" value="deactivate" class="btn-sub btn-action-danger">Deactivate</button>
+                                {% else %}
+                                    <button type="submit" name="role_action" value="activate" class="btn-sub btn-action-success">Activate</button>
+                                {% endif %}
+                            </form>
+                            {% else %}
+                            <span class="text-muted">No actions available</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Category Settings Content -->
+    <div class="tab-content hidden" id="tabContentCategories">
+        <div class="category-manager-grid">
+            <!-- Left: Categories list -->
+            <div class="table-card">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Products Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in categories %}
+                        <tr>
+                            <td><strong>{{ cat.name }}</strong><br><small class="text-muted">{{ cat.slug }}</small></td>
+                            <td>{{ cat.description }}</td>
+                            <td>{{ cat.product_count }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-table-edit"
+                                        data-id="{{ cat.id }}"
+                                        data-name="{{ cat.name|escapejs }}"
+                                        data-description="{{ cat.description|escapejs }}"
+                                        onclick="openEditCategoryModal(this)">
+                                        <ion-icon name="create-outline"></ion-icon>
+                                    </button>
+                                    <form method="POST" action="{% url 'super_delete_category' cat.id %}" style="display:inline;"
+                                        onsubmit="return confirm('Delete this category? All its products will also be deleted!')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-table-delete">
+                                            <ion-icon name="trash-outline"></ion-icon>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Right: Create Category Form -->
+            <div class="category-creation-panel">
+                <div class="glass-form-card">
+                    <h3>Add New Category</h3>
+                    <form method="POST" action="{% url 'super_add_category' %}" class="modal-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="catName">Category Name</label>
+                            <input type="text" id="catName" name="name" required placeholder="e.g. Desk Mats">
+                        </div>
+                        <div class="form-group">
+                            <label for="catDesc">Description</label>
+                            <textarea id="catDesc" name="description" rows="3" placeholder="Category brief..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Create Category</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Category -->
+<div class="modal-overlay hidden" id="editCategoryModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Edit Category</h3>
+            <button class="modal-close" onclick="closeEditCategoryModal()"><ion-icon name="close-outline"></ion-icon></button>
+        </div>
+        <form method="POST" id="editCategoryForm" class="modal-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="editCatName">Category Name</label>
+                <input type="text" id="editCatName" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="editCatDesc">Description</label>
+                <textarea id="editCatDesc" name="description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Category</button>
+        </form>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Data injection for Chart -->
+<script>
+    const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+    let salesChartInstance = null;
+</script>
+
+<script>
+    function switchSuperTab(tabName) {
+        const btnUsers = document.getElementById('tabBtnUsers');
+        const btnCategories = document.getElementById('tabBtnCategories');
+        const contentUsers = document.getElementById('tabContentUsers');
+        const contentCategories = document.getElementById('tabContentCategories');
+        
+        if (tabName === 'users') {
+            btnUsers.classList.add('active');
+            btnCategories.classList.remove('active');
+            contentUsers.classList.remove('hidden');
+            contentCategories.classList.add('hidden');
+        } else {
+            btnUsers.classList.remove('active');
+            btnCategories.classList.add('active');
+            contentUsers.classList.add('hidden');
+            contentCategories.classList.remove('hidden');
+        }
+    }
+
+    // Modal Edit Category functions — reads values from data-* attributes
+    function openEditCategoryModal(btn) {
+        const id          = btn.dataset.id;
+        const name        = btn.dataset.name;
+        const description = btn.dataset.description;
+
+        document.getElementById('editCatName').value = name;
+        document.getElementById('editCatDesc').value = description;
+
+        document.getElementById('editCategoryForm').setAttribute('action', `/super/edit-category/${id}/`);
+
+        document.getElementById('editCategoryModal').classList.remove('hidden');
+    }
+
+    function closeEditCategoryModal() {
+        document.getElementById('editCategoryModal').classList.add('hidden');
+    }
+
+    // Chart.js Generation logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(157, 78, 221, 0.4)'); // Purple
+        gradient.addColorStop(1, 'rgba(157, 78, 221, 0.0)'); // Transparent
+
+        salesChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.daily.labels,
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: chartData.daily.values,
+                    borderColor: '#9d4edd',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#9d4edd',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawOnChartArea: true,
+                            drawTicks: false
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            maxTicksLimit: 12
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                            drawOnChartArea: true,
+                            drawTicks: false
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    function updateChart(timeframe, titleText, btnElement) {
+        if (!salesChartInstance) return;
+
+        // Update data
+        salesChartInstance.data.labels = chartData[timeframe].labels;
+        salesChartInstance.data.datasets[0].data = chartData[timeframe].values;
+        salesChartInstance.update();
+
+        // Update title
+        document.getElementById('chartTitle').innerText = titleText;
+
+        // Update active button state
+        const buttons = document.querySelectorAll('.btn-time-filter');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+</script>
+{% endblock %}

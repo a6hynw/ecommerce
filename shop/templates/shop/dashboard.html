@@ -1,0 +1,150 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}My Dashboard | AetherStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header-block">
+        <div>
+            <h1 class="page-title">Customer Dashboard</h1>
+            <p class="dashboard-subtitle">Welcome back, <strong>{{ user.username }}</strong>! Manage and track your recent orders.</p>
+        </div>
+        <div class="user-profile-summary">
+            <div class="profile-avatar">
+                <ion-icon name="person"></ion-icon>
+            </div>
+            <div class="profile-meta">
+                <span class="profile-name">{{ user.username }}</span>
+                <span class="profile-email">{{ user.email|default:"customer@aetherstore.com" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Section -->
+    <div class="dashboard-orders-section">
+        <h2 class="section-title">Order History</h2>
+        
+        {% if orders %}
+        <div class="orders-list">
+            {% for order in orders %}
+            <div class="order-card" id="orderCard-{{ order.id }}">
+                <!-- Header -->
+                <div class="order-card-header" onclick="toggleOrderDetails({{ order.id }})">
+                    <div class="order-header-info">
+                        <span class="order-id">Order #{{ order.id }}</span>
+                        <span class="order-date"><ion-icon name="calendar-outline"></ion-icon> {{ order.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="order-header-right">
+                        <span class="order-total-price">${{ order.total_price }}</span>
+                        
+                        <!-- Status Badge -->
+                        <span class="status-badge status-{{ order.status|lower }}">
+                            {{ order.status }}
+                        </span>
+                        
+                        <button class="btn-toggle-details">
+                            <ion-icon name="chevron-down-outline" id="toggleIcon-{{ order.id }}"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Tracker Bar -->
+                <div class="order-tracker">
+                    {% if order.status == 'Cancelled' %}
+                        <div class="tracker-step cancelled">
+                            <div class="step-dot"><ion-icon name="close-outline"></ion-icon></div>
+                            <span>Cancelled</span>
+                        </div>
+                        <div class="tracker-line cancelled"></div>
+                        <div class="tracker-step cancelled">
+                            <div class="step-dot"><ion-icon name="close-outline"></ion-icon></div>
+                            <span>Cancelled</span>
+                        </div>
+                        <div class="tracker-line cancelled"></div>
+                        <div class="tracker-step cancelled">
+                            <div class="step-dot"><ion-icon name="close-outline"></ion-icon></div>
+                            <span>Cancelled</span>
+                        </div>
+                        <div class="tracker-line cancelled"></div>
+                        <div class="tracker-step cancelled">
+                            <div class="step-dot"><ion-icon name="close-outline"></ion-icon></div>
+                            <span>Cancelled</span>
+                        </div>
+                    {% else %}
+                        <div class="tracker-step {% if order.status == 'Pending' or order.status == 'Processing' or order.status == 'Shipped' or order.status == 'Delivered' %}active{% endif %}">
+                            <div class="step-dot"><ion-icon name="create-outline"></ion-icon></div>
+                            <span>Placed</span>
+                        </div>
+                        <div class="tracker-line {% if order.status == 'Processing' or order.status == 'Shipped' or order.status == 'Delivered' %}active{% endif %}"></div>
+                        <div class="tracker-step {% if order.status == 'Processing' or order.status == 'Shipped' or order.status == 'Delivered' %}active{% endif %}">
+                            <div class="step-dot"><ion-icon name="cog-outline"></ion-icon></div>
+                            <span>Processing</span>
+                        </div>
+                        <div class="tracker-line {% if order.status == 'Shipped' or order.status == 'Delivered' %}active{% endif %}"></div>
+                        <div class="tracker-step {% if order.status == 'Shipped' or order.status == 'Delivered' %}active{% endif %}">
+                            <div class="step-dot"><ion-icon name="boat-outline"></ion-icon></div>
+                            <span>Shipped</span>
+                        </div>
+                        <div class="tracker-line {% if order.status == 'Delivered' %}active{% endif %}"></div>
+                        <div class="tracker-step {% if order.status == 'Delivered' %}active{% endif %}">
+                            <div class="step-dot"><ion-icon name="checkmark-done-outline"></ion-icon></div>
+                            <span>Delivered</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Expandable Details -->
+                <div class="order-details-drawer hidden" id="orderDetails-{{ order.id }}">
+                    <div class="drawer-grid">
+                        <!-- Left: Items list -->
+                        <div class="drawer-items">
+                            <h4>Ordered Items</h4>
+                            <div class="drawer-items-list">
+                                {% for item in order.items.all %}
+                                <div class="drawer-item-row">
+                                    <span class="drawer-item-name">{{ item.product.name|default:"Deleted Product" }} x {{ item.quantity }}</span>
+                                    <span class="drawer-item-price">${{ item.subtotal }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Shipping detail -->
+                        <div class="drawer-shipping">
+                            <h4>Shipping Address</h4>
+                            <p><strong>Recipient:</strong> {{ order.full_name }}</p>
+                            <p><strong>Phone:</strong> {{ order.phone }}</p>
+                            <p>{{ order.shipping_address }}</p>
+                            <p>{{ order.city }}, {{ order.zip_code }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <ion-icon name="bag-handle-outline"></ion-icon>
+            <h3>No orders found</h3>
+            <p>You haven't placed any orders yet. Visit the catalog to make your first purchase!</p>
+            <a href="{% url 'home' %}" class="btn btn-primary">Start Shopping</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function toggleOrderDetails(orderId) {
+        const drawer = document.getElementById(`orderDetails-${orderId}`);
+        const icon = document.getElementById(`toggleIcon-${orderId}`);
+        
+        if (drawer.classList.contains('hidden')) {
+            drawer.classList.remove('hidden');
+            icon.setAttribute('name', 'chevron-up-outline');
+        } else {
+            drawer.classList.add('hidden');
+            icon.setAttribute('name', 'chevron-down-outline');
+        }
+    }
+</script>
+{% endblock %}

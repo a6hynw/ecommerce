@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AetherStore | Future of E-Commerce{% endblock %}</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <!-- Core CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'shop/css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Toast Message Alerts -->
+    {% if messages %}
+    <div class="toast-container" id="toastContainer">
+        {% for message in messages %}
+        <div class="toast {% if message.tags %}toast-{{ message.tags }}{% endif %}">
+            <div class="toast-content">
+                <ion-icon name="{% if message.tags == 'success' %}checkmark-circle-outline{% elif message.tags == 'error' %}alert-circle-outline{% else %}information-circle-outline{% endif %}"></ion-icon>
+                <span>{{ message }}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Glassmorphic Navbar -->
+    <header class="navbar-header">
+        <nav class="navbar">
+            <a href="{% url 'home' %}" class="logo">
+                <span class="logo-accent">Aether</span>Store
+            </a>
+            
+            <ul class="nav-links" id="navLinks">
+                <li><a href="{% url 'home' %}" class="nav-item">Shop</a></li>
+                {% if user.is_authenticated %}
+                    <li>
+                        <a href="{% url 'cart' %}" class="nav-item cart-badge-container">
+                            Cart
+                            <span class="cart-badge" id="globalCartBadge">{% if cart_count %}{{ cart_count }}{% else %}0{% endif %}</span>
+                        </a>
+                    </li>
+                    <li><a href="{% url 'dashboard' %}" class="nav-item">My Orders</a></li>
+                    
+                    {% if user.is_superuser %}
+                        <li><a href="{% url 'super_admin_dashboard' %}" class="nav-item admin-tag super-admin-tag">Super Admin</a></li>
+                    {% elif user.is_staff %}
+                        <li><a href="{% url 'admin_dashboard' %}" class="nav-item admin-tag">Admin Panel</a></li>
+                    {% endif %}
+                    
+                    <li><span class="welcome-text">Hi, {{ user.username }}</span></li>
+                    <li><a href="{% url 'logout' %}" class="nav-btn btn-secondary">Logout</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}" class="nav-item">Login</a></li>
+                    <li><a href="{% url 'register' %}" class="nav-btn btn-primary">Register</a></li>
+                {% endif %}
+            </ul>
+            
+            <div class="hamburger" id="hamburger">
+                <ion-icon name="menu-outline" id="hamburgerIcon"></ion-icon>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Premium Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h3 class="logo"><span class="logo-accent">Aether</span>Store</h3>
+                <p>Premium dark-glassmorphism full-stack Python e-commerce shopping experience.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Customer Service</h4>
+                <ul>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">Shipping Policy</a></li>
+                    <li><a href="#">Returns & Exchanges</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Actions</h4>
+                <ul>
+                    <li><a href="{% url 'home' %}">Browse Products</a></li>
+                    <li><a href="{% url 'cart' %}">View Cart</a></li>
+                    <li><a href="{% url 'dashboard' %}">Track Order</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 AetherStore. Developed in Django. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Global Javascript -->
+    <script src="{% static 'shop/js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+    <script>
+        // Automatic Fade Out for Toasts
+        document.addEventListener('DOMContentLoaded', () => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => toast.remove(), 500);
+                }, 4000);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ product.name }} | AetherStore{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <!-- Back to shop link -->
+    <a href="{% url 'home' %}" class="back-link">
+        <ion-icon name="arrow-back-outline"></ion-icon> Back to Catalog
+    </a>
+
+    <!-- Product Detail Flex layout -->
+    <div class="product-detail-layout">
+        <!-- Visual/Image Column -->
+        <div class="product-detail-visual">
+            {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" class="detail-image">
+            {% else %}
+                <div class="detail-placeholder">
+                    <ion-icon name="cube-outline"></ion-icon>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Info Column -->
+        <div class="product-detail-info">
+            <span class="detail-category">{{ product.category.name }}</span>
+            <h1 class="detail-title">{{ product.name }}</h1>
+            <span class="detail-price">${{ product.price }}</span>
+
+            <div class="detail-status">
+                {% if product.stock > 5 %}
+                    <span class="status-indicator status-in-stock">
+                        <span class="indicator-dot"></span> In Stock ({{ product.stock }} available)
+                    </span>
+                {% elif product.stock > 0 %}
+                    <span class="status-indicator status-low-stock">
+                        <span class="indicator-dot"></span> Low Stock (Only {{ product.stock }} left!)
+                    </span>
+                {% else %}
+                    <span class="status-indicator status-out-of-stock">
+                        <span class="indicator-dot"></span> Currently Out of Stock
+                    </span>
+                {% endif %}
+            </div>
+
+            <p class="detail-description">{{ product.description }}</p>
+
+            {% if product.stock > 0 %}
+            <div class="add-to-cart-widget">
+                <div class="quantity-selector">
+                    <button type="button" onclick="decrementQty()"><ion-icon name="remove-outline"></ion-icon></button>
+                    <input type="number" id="detailQty" value="1" min="1" max="{{ product.stock }}" readonly>
+                    <button type="button" onclick="incrementQty({{ product.stock }})"><ion-icon name="add-outline"></ion-icon></button>
+                </div>
+                
+                <button class="btn btn-primary" onclick="detailAddToCart({{ product.id }})">
+                    <ion-icon name="cart-outline"></ion-icon> Add to Cart
+                </button>
+            </div>
+            {% else %}
+            <button class="btn btn-secondary btn-block" disabled>Out of Stock</button>
+            {% endif %}
+
+            <!-- Specifications list -->
+            <div class="product-specs">
+                <h3>Product Specifications</h3>
+                <ul>
+                    <li><span class="spec-label">Category:</span> {{ product.category.name }}</li>
+                    <li><span class="spec-label">Warranty:</span> 1 Year Brand Warranty</li>
+                    <li><span class="spec-label">Availability:</span> Dispatched in 24 hours</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="related-section">
+        <h2 class="section-title">You May Also Like</h2>
+        <div class="products-grid">
+            {% for r_prod in related_products %}
+            <div class="product-card">
+                <div class="product-image-container">
+                    {% if r_prod.image_url %}
+                        <img src="{{ r_prod.image_url }}" alt="{{ r_prod.name }}" class="product-image">
+                    {% else %}
+                        <div class="product-placeholder">
+                            <ion-icon name="cube-outline"></ion-icon>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="product-card-body">
+                    <span class="product-card-category">{{ r_prod.category.name }}</span>
+                    <h3 class="product-card-title">
+                        <a href="{% url 'product_detail' r_prod.slug %}">{{ r_prod.name }}</a>
+                    </h3>
+                    <div class="product-card-footer">
+                        <span class="product-card-price">${{ r_prod.price }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mock Customer Reviews -->
+    <div class="reviews-section">
+        <h2 class="section-title">Customer Feedback</h2>
+        
+        <!-- Feedback Form -->
+        <div class="feedback-form-container">
+            <h3>Leave a Review</h3>
+            <form class="feedback-form" action="#" method="POST">
+                <div class="star-rating-input">
+                    <input type="radio" id="star5" name="rating" value="5" /><label for="star5" title="5 stars"><ion-icon name="star"></ion-icon></label>
+                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="4 stars"><ion-icon name="star"></ion-icon></label>
+                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="3 stars"><ion-icon name="star"></ion-icon></label>
+                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="2 stars"><ion-icon name="star"></ion-icon></label>
+                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star"><ion-icon name="star"></ion-icon></label>
+                </div>
+                <div class="form-group">
+                    <textarea name="feedback_text" rows="4" placeholder="Share your experience with this product..." required></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="alert('Review submitted successfully!')">Submit Feedback</button>
+            </form>
+        </div>
+
+        <div class="reviews-list">
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author">Sarah Jenkins</span>
+                    <span class="review-rating">
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                    </span>
+                </div>
+                <p class="review-text">Absolutely incredible quality! Exceeded my expectations, the layout design is outstanding and matches my desktop setup perfectly.</p>
+            </div>
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author">Marcus Aurelius</span>
+                    <span class="review-rating">
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star"></ion-icon>
+                        <ion-icon name="star-outline"></ion-icon>
+                    </span>
+                </div>
+                <p class="review-text">Fast shipping and robust build quality. Minor configuration issue that was resolved immediately by the admin team.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function incrementQty(maxVal) {
+        const input = document.getElementById('detailQty');
+        let val = parseInt(input.value);
+        if (val < maxVal) {
+            input.value = val + 1;
+        }
+    }
+
+    function decrementQty() {
+        const input = document.getElementById('detailQty');
+        let val = parseInt(input.value);
+        if (val > 1) {
+            input.value = val - 1;
+        }
+    }
+</script>
+{% endblock %}

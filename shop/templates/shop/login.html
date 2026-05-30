@@ -1,0 +1,96 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Login | AetherStore{% endblock %}
+
+{% block content %}
+<div class="auth-split-container">
+    <!-- Left Info Panel -->
+    <div class="auth-info-panel">
+        <div class="auth-info-content">
+            <h1 class="auth-info-title">Welcome to AetherStore</h1>
+            <p class="auth-info-desc">Discover a meticulously curated collection of premium products designed to elevate your aesthetic and simplify your life. Join us today and explore.</p>
+            
+            <div class="auth-features">
+                <div class="auth-feature-item">
+                    <ion-icon name="shield-checkmark-outline"></ion-icon>
+                    <span>Secure & Fast Checkout</span>
+                </div>
+                <div class="auth-feature-item">
+                    <ion-icon name="cube-outline"></ion-icon>
+                    <span>Premium Quality Guaranteed</span>
+                </div>
+                <div class="auth-feature-item">
+                    <ion-icon name="star-outline"></ion-icon>
+                    <span>Exclusive Member Offers</span>
+                </div>
+            </div>
+
+            <div class="auth-categories">
+                <h3 class="auth-categories-title">Explore Categories</h3>
+                <div class="auth-categories-list">
+                    {% for cat in categories %}
+                        <span class="category-pill">{{ cat.name }}</span>
+                    {% empty %}
+                        <span class="category-pill">Electronics</span>
+                        <span class="category-pill">Accessories</span>
+                        <span class="category-pill">Apparel</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-form-panel">
+        <div class="auth-card">
+            <div class="auth-logo-area">
+                <ion-icon name="storefront-outline" class="auth-logo-icon"></ion-icon>
+            </div>
+            <h2 class="auth-title">Welcome Back</h2>
+            <p class="auth-subtitle">Sign in to your account to continue shopping</p>
+            
+            <form method="POST" action="{% url 'login' %}" class="auth-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <ion-icon name="person-outline"></ion-icon>
+                        <input type="text" id="username" name="username" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <ion-icon name="lock-closed-outline"></ion-icon>
+                        <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+                        <button type="button" class="btn-password-toggle" onclick="togglePassword('password', 'loginEyeIcon')" title="Show/Hide Password">
+                            <ion-icon name="eye-outline" id="loginEyeIcon"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>New to AetherStore? <a href="{% url 'register' %}">Create an account</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.setAttribute('name', 'eye-off-outline');
+        } else {
+            input.type = 'password';
+            icon.setAttribute('name', 'eye-outline');
+        }
+    }
+</script>
+{% endblock %}
